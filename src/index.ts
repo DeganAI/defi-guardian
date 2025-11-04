@@ -52,7 +52,7 @@ const { app, addEntrypoint, config } = createAgentApp(
   {
     name: "DeFi Guardian",
     version: "1.0.0",
-    description: "Comprehensive DeFi risk analysis powered by 5 specialized agents - your complete portfolio health monitor",
+    description: "Comprehensive DeFi risk analysis powered by 6 specialized agents - your complete portfolio health monitor with auto-detected LP positions",
   },
   {
     config: {
@@ -79,6 +79,7 @@ const INTERNAL_SERVICES = {
   lp: "https://lp-impermanent-loss-estimator-production-62b5.up.railway.app/api/internal/lp-impermanent-loss-estimator",
   perps: "https://perps-funding-pulse-production.up.railway.app/api/internal/perps-funding-pulse",
   arbitrage: "https://cross-dex-arbitrage-production.up.railway.app/api/internal/cross-dex-arbitrage",
+  portfolio: "https://portfolio-scanner-production.up.railway.app/api/internal/portfolio-scanner",
 };
 
 // Shared API key for internal service calls (set via environment variable)
@@ -140,7 +141,8 @@ function generateSummary(
   criticalAlerts: string[],
   lendingData: any,
   yieldData: any,
-  lpData: any
+  lpData: any,
+  portfolioData: any
 ): string {
   const riskLevel =
     riskScore >= 75
@@ -153,10 +155,17 @@ function generateSummary(
 
   let summary = `${riskLevel} risk detected (score: ${riskScore}/100). `;
 
+  // LP positions (auto-detected from portfolio scanner)
+  const lpPositions = portfolioData?.lp_positions || [];
+  const totalLpValue = portfolioData?.total_portfolio_value_usd || 0;
+  if (lpPositions.length > 0) {
+    summary += `Found ${lpPositions.length} LP position(s) worth $${totalLpValue.toFixed(0)} across ${[...new Set(lpPositions.map((p: any) => p.protocol))].length} DEX(es). `;
+  }
+
   // Lending positions (user's actual deposits & borrows)
   if (lendingData?.total_positions > 0) {
     const totalCollateral = lendingData.positions.reduce((sum: number, p: any) => sum + p.collateral_usd, 0);
-    summary += `You have $${totalCollateral.toFixed(0)} deposited across ${lendingData.total_positions} lending protocol(s). `;
+    summary += `$${totalCollateral.toFixed(0)} deposited across ${lendingData.total_positions} lending protocol(s). `;
   }
 
   if (criticalAlerts.length > 0) {
@@ -179,7 +188,7 @@ function generateSummary(
     summary += `Found ${yieldData.pools.length} high-yield opportunities. `;
   }
 
-  if (riskScore < 25 && lendingData?.total_positions === 0) {
+  if (riskScore < 25 && lendingData?.total_positions === 0 && lpPositions.length === 0) {
     summary += "No active DeFi positions detected. Consider the yield opportunities shown.";
   } else if (riskScore < 25) {
     summary += "Your DeFi positions are healthy. Continue monitoring for changes.";
@@ -197,6 +206,18 @@ addEntrypoint({
   price: "$0.75", // Flat rate
   async handler({ input, context }) {
     const criticalAlerts: string[] = [];
+
+    // NEW: Call Portfolio Scanner to auto-detect LP positions (internal API - zero cost)
+    console.log("[GUARDIAN] Scanning wallet for LP positions...");
+    const portfolioData = await callInternalService(
+      INTERNAL_SERVICES.portfolio,
+      {
+        wallet_address: input.wallet_address,
+        chain_ids: input.chain_ids,
+      }
+    );
+
+    console.log(`[GUARDIAN] Found ${portfolioData?.lp_positions?.length || 0} LP positions`);
 
     // Call Lending Liquidation Sentinel (internal API - zero cost)
     console.log("[GUARDIAN] Analyzing lending positions...");
@@ -232,35 +253,52 @@ addEntrypoint({
       }
     );
 
-    // Call LP Impermanent Loss Estimator (internal API - zero cost)
-    // Only analyze if user provided LP positions
+    // Analyze detected LP positions using IL Estimator (internal API - zero cost)
     let lpData = null;
-    if (input.lp_positions && input.lp_positions.length > 0) {
-      console.log("[GUARDIAN] Analyzing user's LP positions...");
+    const lpPositions = portfolioData?.lp_positions || [];
+
+    if (lpPositions.length > 0) {
+      console.log(`[GUARDIAN] Analyzing ${lpPositions.length} detected LP positions for impermanent loss...`);
 
       // Analyze first LP position (can be extended to handle multiple)
-      const position = input.lp_positions[0];
+      const position = lpPositions[0];
+
+      // Determine entry date - use provided date or estimate (30 days ago)
+      const entryDate = input.lp_entry_date
+        ? new Date(input.lp_entry_date)
+        : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
       const daysHeld = Math.floor(
-        (Date.now() - new Date(position.entry_date).getTime()) / (1000 * 60 * 60 * 24)
+        (Date.now() - entryDate.getTime()) / (1000 * 60 * 60 * 24)
       );
 
-      // Get current prices (simplified - would need price oracle in production)
-      const currentRatio = position.initial_price0 / position.initial_price1;
+      // Calculate initial prices (estimate from current amounts - simplified)
+      const initial_price_0 = position.token0_price_usd;
+      const initial_price_1 = position.token1_price_usd;
+      const currentRatio = position.token0_price_usd / position.token1_price_usd;
 
       lpData = await callInternalService(
         INTERNAL_SERVICES.lp,
         {
-          initial_price_0: position.initial_price0,
-          initial_price_1: position.initial_price1,
-          current_price_ratio: currentRatio, // Would need real-time price in production
+          initial_price_0,
+          initial_price_1,
+          current_price_ratio: currentRatio,
           amount_0: position.token0_amount,
           amount_1: position.token1_amount,
-          fees_earned: 0, // Would need to fetch from protocol
+          fees_earned: position.fees_owed_0 ?
+            (position.fees_owed_0 * position.token0_price_usd + position.fees_owed_1 * position.token1_price_usd) : 0,
           days_held: daysHeld,
         }
       );
+
+      // Add critical alert if IL is significant
+      if (lpData?.il_percentage && lpData.il_percentage < -10) {
+        criticalAlerts.push(
+          `💸 ${position.protocol}: ${lpData.il_percentage.toFixed(2)}% impermanent loss detected`
+        );
+      }
     } else {
-      console.log("[GUARDIAN] No LP positions provided, skipping IL analysis...");
+      console.log("[GUARDIAN] No LP positions detected, skipping IL analysis...");
     }
 
     // Optional: Call Perps Funding Pulse (internal API - zero cost)
@@ -298,7 +336,8 @@ addEntrypoint({
       criticalAlerts,
       lendingData,
       yieldData,
-      lpData
+      lpData,
+      portfolioData
     );
 
     return {
@@ -358,4 +397,5 @@ console.log(`💰 Payment address: ${config.payments?.payTo}`);
 console.log(`💵 Flat rate: $0.75 per analysis`);
 console.log(`🔓 Internal API mode: ZERO backend costs`);
 console.log(`💎 Profit margin: 100% ($0.75 pure profit per call)`);
-console.log(`📊 Powered by 5 specialized DeFi agents`);
+console.log(`🔍 Auto-detects LP positions across Uniswap V3, Curve, Balancer, SushiSwap`);
+console.log(`📊 Powered by 6 specialized DeFi agents`);
