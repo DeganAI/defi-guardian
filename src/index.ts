@@ -62,38 +62,41 @@ const { app, addEntrypoint, config } = createAgentApp(
   }
 );
 
-// Service agent endpoints
-const SERVICES = {
-  lending: "https://lending-liquidation-sentinel-production.up.railway.app/entrypoints/lending-liquidation-sentinel/invoke",
-  yield: "https://yield-pool-watcher-production.up.railway.app/entrypoints/yield-pool-watcher/invoke",
-  lp: "https://lp-impermanent-loss-estimator-production-62b5.up.railway.app/entrypoints/lp-impermanent-loss-estimator/invoke",
-  perps: "https://perps-funding-pulse-production.up.railway.app/entrypoints/perps-funding-pulse/invoke",
-  arbitrage: "https://cross-dex-arbitrage-production.up.railway.app/entrypoints/cross-dex-arbitrage/invoke",
+// Internal API endpoints (zero cost - requires API key)
+const INTERNAL_SERVICES = {
+  lending: "https://lending-liquidation-sentinel-production.up.railway.app/api/internal/lending-liquidation-sentinel",
+  yield: "https://yield-pool-watcher-production.up.railway.app/api/internal/yield-pool-watcher",
+  lp: "https://lp-impermanent-loss-estimator-production-62b5.up.railway.app/api/internal/lp-impermanent-loss-estimator",
+  perps: "https://perps-funding-pulse-production.up.railway.app/api/internal/perps-funding-pulse",
+  arbitrage: "https://cross-dex-arbitrage-production.up.railway.app/api/internal/cross-dex-arbitrage",
 };
 
-async function callServiceAgent(
+// Shared API key for internal service calls (set via environment variable)
+const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || "defi-guardian-internal-2024";
+
+async function callInternalService(
   url: string,
-  payload: any,
-  context: any
+  payload: any
 ): Promise<any> {
   try {
-    // Use runtime context to make authenticated payment
-    const response = await context.runtime.fetch(url, {
+    // Call internal API with API key (no payment required)
+    const response = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "X-Internal-API-Key": INTERNAL_API_KEY,
       },
       body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
-      console.error(`[SERVICE] ${url} returned ${response.status}`);
+      console.error(`[INTERNAL] ${url} returned ${response.status}`);
       return null;
     }
 
     return await response.json();
   } catch (error) {
-    console.error(`[SERVICE] Error calling ${url}:`, error);
+    console.error(`[INTERNAL] Error calling ${url}:`, error);
     return null;
   }
 }
@@ -173,17 +176,16 @@ addEntrypoint({
   async handler({ input, context }) {
     const criticalAlerts: string[] = [];
 
-    // Call Lending Liquidation Sentinel
+    // Call Lending Liquidation Sentinel (internal API - zero cost)
     console.log("[GUARDIAN] Analyzing lending positions...");
-    const lendingData = await callServiceAgent(
-      SERVICES.lending,
+    const lendingData = await callInternalService(
+      INTERNAL_SERVICES.lending,
       {
         wallet_address: input.wallet_address,
         chain_ids: input.chain_ids,
         protocols: ["aave", "compound"],
         alert_threshold: 1.5,
-      },
-      context
+      }
     );
 
     if (lendingData?.positions) {
@@ -196,23 +198,22 @@ addEntrypoint({
       });
     }
 
-    // Call Yield Pool Watcher
+    // Call Yield Pool Watcher (internal API - zero cost)
     console.log("[GUARDIAN] Analyzing yield pools...");
-    const yieldData = await callServiceAgent(
-      SERVICES.yield,
+    const yieldData = await callInternalService(
+      INTERNAL_SERVICES.yield,
       {
         protocol_ids: ["aave-v3", "compound-v3", "uniswap-v3"],
         chain_ids: input.chain_ids,
         apy_threshold: 10,
         tvl_threshold: 0.2,
-      },
-      context
+      }
     );
 
-    // Call LP Impermanent Loss Estimator (example with simulated position)
+    // Call LP Impermanent Loss Estimator (internal API - zero cost)
     console.log("[GUARDIAN] Estimating LP impermanent loss...");
-    const lpData = await callServiceAgent(
-      SERVICES.lp,
+    const lpData = await callInternalService(
+      INTERNAL_SERVICES.lp,
       {
         initial_price_0: 100,
         initial_price_1: 100,
@@ -221,36 +222,33 @@ addEntrypoint({
         amount_1: 1000,
         fees_earned: 50,
         days_held: 30,
-      },
-      context
+      }
     );
 
-    // Optional: Call Perps Funding Pulse
+    // Optional: Call Perps Funding Pulse (internal API - zero cost)
     let perpsData = null;
     if (input.include_perps) {
       console.log("[GUARDIAN] Analyzing perpetuals funding...");
-      perpsData = await callServiceAgent(
-        SERVICES.perps,
+      perpsData = await callInternalService(
+        INTERNAL_SERVICES.perps,
         {
           symbols: ["BTC-PERP", "ETH-PERP"],
           exchanges: ["binance", "bybit"],
-        },
-        context
+        }
       );
     }
 
-    // Optional: Call Cross DEX Arbitrage
+    // Optional: Call Cross DEX Arbitrage (internal API - zero cost)
     let arbitrageData = null;
     if (input.include_arbitrage) {
       console.log("[GUARDIAN] Scanning arbitrage opportunities...");
-      arbitrageData = await callServiceAgent(
-        SERVICES.arbitrage,
+      arbitrageData = await callInternalService(
+        INTERNAL_SERVICES.arbitrage,
         {
           token_address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", // USDC
           chain_id: 1,
           min_profit_usd: 10,
-        },
-        context
+        }
       );
     }
 
@@ -321,4 +319,6 @@ console.log(`🚀 DeFi Guardian running on port ${process.env.PORT || 3000}`);
 console.log(`📝 Manifest: ${process.env.BASE_URL}/.well-known/agent.json`);
 console.log(`💰 Payment address: ${config.payments?.payTo}`);
 console.log(`💵 Flat rate: $0.75 per analysis`);
+console.log(`🔓 Internal API mode: ZERO backend costs`);
+console.log(`💎 Profit margin: 100% ($0.75 pure profit per call)`);
 console.log(`📊 Powered by 10 specialized DeFi agents`);
