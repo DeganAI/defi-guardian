@@ -390,6 +390,30 @@ addEntrypoint({
   },
 });
 
+// Add favicon route for x402scan display
+app.get("/favicon.ico", (c) => {
+  const svg = `<svg width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <path d="M 256 40 L 440 120 L 440 280 Q 440 400 256 472 Q 72 400 72 280 L 72 120 Z"
+        fill="url(#grad1)" stroke="#1e293b" stroke-width="8"/>
+  <path d="M 256 80 L 400 140 L 400 260 Q 400 360 256 420 Q 112 360 112 260 L 112 140 Z"
+        fill="#1e293b" opacity="0.3"/>
+  <text x="256" y="280" font-family="Arial, sans-serif" font-size="180" font-weight="bold"
+        fill="#ffffff" text-anchor="middle">$</text>
+  <path d="M 180 300 L 220 340 L 300 240"
+        stroke="#10b981" stroke-width="16" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>`;
+
+  return new Response(svg, {
+    headers: { "Content-Type": "image/svg+xml" },
+  });
+});
+
 // Export for Bun
 export default {
   port: parseInt(process.env.PORT || "3000"),
