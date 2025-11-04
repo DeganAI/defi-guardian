@@ -232,7 +232,7 @@ addEntrypoint({
       perpsData = await callInternalService(
         INTERNAL_SERVICES.perps,
         {
-          venue_ids: ["binance", "bybit", "okx"],
+          venue_ids: ["okx", "hyperliquid"], // Using working exchanges only
           markets: ["BTC/USDT:USDT", "ETH/USDT:USDT"],
         }
       );
