@@ -1,4 +1,5 @@
 import { createAgentApp } from "@lucid-dreams/agent-kit";
+import { Hono } from "hono";
 import { z } from "zod";
 
 // Input schema
@@ -398,21 +399,121 @@ addEntrypoint({
   },
 });
 
+// Create wrapper app for custom routes and internal API
+const wrapperApp = new Hono();
+
 // Add favicon route for x402scan display
-app.get("/favicon.ico", (c) => {
+wrapperApp.get("/favicon.ico", (c) => {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
     <text y="80" font-size="80">🛡️</text>
 </svg>`;
 
-  return new Response(svg, {
-    headers: { "Content-Type": "image/svg+xml" },
-  });
+  return c.body(svg, 200, { "Content-Type": "image/svg+xml" });
 });
+
+// Add custom root route with Open Graph meta tags (MUST be before agent-kit routes)
+wrapperApp.get("/", (c) => {
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DeFi Guardian</title>
+    <link rel="icon" href="/favicon.ico" type="image/svg+xml">
+
+    <!-- Open Graph tags -->
+    <meta property="og:title" content="DeFi Guardian">
+    <meta property="og:description" content="Complete DeFi portfolio health monitoring via x402 micropayments">
+    <meta property="og:image" content="https://defi-guardian-production.up.railway.app/favicon.ico">
+
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            line-height: 1.6;
+            color: #e6f4ea;
+            background: linear-gradient(135deg, #0c2713 0%, #154725 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: rgba(10, 31, 17, 0.95);
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(118, 173, 139, 0.3);
+        }
+        h1 {
+            color: #6de8a5;
+            margin-top: 0;
+            font-size: 2.5em;
+        }
+        .shield {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+        a {
+            color: #6de8a5;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .section {
+            margin: 30px 0;
+        }
+        code {
+            background: rgba(109, 232, 165, 0.18);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="shield">🛡️</div>
+        <h1>DeFi Guardian</h1>
+        <p><strong>Complete DeFi portfolio health monitoring via x402 micropayments</strong></p>
+
+        <div class="section">
+            <h2>Features</h2>
+            <ul>
+                <li>🔍 Auto-detects LP positions across Uniswap V3, Curve, Balancer, SushiSwap</li>
+                <li>💰 Monitors lending positions for liquidation risk</li>
+                <li>📊 Analyzes impermanent loss on active LP positions</li>
+                <li>🎯 Tracks high-yield farming opportunities</li>
+                <li>⚡ Optional perpetuals funding rate monitoring</li>
+                <li>💱 Optional cross-DEX arbitrage detection</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>Pricing</h2>
+            <p>$0.75 per comprehensive analysis (flat rate, paid in USDC on Base)</p>
+            <p><em>100% profit margin - all backend APIs are zero-cost internal services</em></p>
+        </div>
+
+        <div class="section">
+            <h2>API Documentation</h2>
+            <p>Manifest: <a href="/.well-known/agent.json">/.well-known/agent.json</a></p>
+            <p>Powered by <a href="https://degenllama.net" target="_blank">degenllama.net</a></p>
+        </div>
+    </div>
+</body>
+</html>`;
+
+  return c.html(html);
+});
+
+// Mount the x402 agent app (all other routes)
+wrapperApp.route("/", app);
 
 // Export for Bun
 export default {
   port: parseInt(process.env.PORT || "3000"),
-  fetch: app.fetch,
+  fetch: wrapperApp.fetch,
 };
 
 // Bun server start

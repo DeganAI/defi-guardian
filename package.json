@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@lucid-dreams/agent-kit": "^0.2.24",
+    "hono": "^4.7.11",
     "zod": "^4.1.12"
   },
   "devDependencies": {
