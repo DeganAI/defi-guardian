@@ -402,17 +402,15 @@ addEntrypoint({
 // Create wrapper app for custom routes and internal API
 const wrapperApp = new Hono();
 
-// Mount the x402 agent app first (provides all agent-kit routes)
-wrapperApp.route("/", app);
-
-// Add favicon route for x402scan display (overrides agent-kit's favicon if any)
+// Add custom routes FIRST (before mounting agent app) so they take precedence
+// Custom favicon route for x402scan display
 wrapperApp.get("/favicon.ico", async (c) => {
   const file = Bun.file("./dgfav.png");
   const buffer = await file.arrayBuffer();
   return c.body(buffer, 200, { "Content-Type": "image/png" });
 });
 
-// Add custom root route with Open Graph meta tags (overrides agent-kit's root route)
+// Custom root route with Open Graph meta tags for x402scan
 wrapperApp.get("/", (c) => {
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -507,6 +505,9 @@ wrapperApp.get("/", (c) => {
 
   return c.html(html);
 });
+
+// Mount the x402 agent app (provides all other agent-kit routes like /.well-known/agent.json)
+wrapperApp.route("/", app);
 
 // Export for Bun
 export default {
