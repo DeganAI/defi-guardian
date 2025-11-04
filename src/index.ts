@@ -53,6 +53,8 @@ const { app, addEntrypoint, config } = createAgentApp(
     name: "DeFi Guardian",
     version: "1.0.0",
     description: "Comprehensive DeFi risk analysis powered by 6 specialized agents - your complete portfolio health monitor with auto-detected LP positions",
+    icon: "https://raw.githubusercontent.com/DeganAI/.github/main/defi-guardian-icon.png",
+    url: "https://degenllama.net",
   },
   {
     config: {
