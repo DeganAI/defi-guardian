@@ -489,15 +489,29 @@ wrapperApp.get("/", (c) => {
         </div>
 
         <div class="section">
-            <h2>Pricing</h2>
-            <p>$0.75 per comprehensive analysis (flat rate, paid in USDC on Base)</p>
-            <p><em>100% profit margin - all backend APIs are zero-cost internal services</em></p>
+            <h2>API Endpoints</h2>
+            <div style="background: rgba(109, 232, 165, 0.1); padding: 15px; border-radius: 8px; margin: 10px 0;">
+                <strong>Analyze Portfolio</strong><br>
+                <code style="color: #6de8a5;">POST /entrypoints/defi-guardian/invoke</code>
+            </div>
+            <div style="background: rgba(109, 232, 165, 0.1); padding: 15px; border-radius: 8px; margin: 10px 0;">
+                <strong>Agent Manifest</strong><br>
+                <code style="color: #6de8a5;">GET /.well-known/agent.json</code>
+            </div>
         </div>
 
         <div class="section">
-            <h2>API Documentation</h2>
-            <p>Manifest: <a href="/.well-known/agent.json">/.well-known/agent.json</a></p>
-            <p>Powered by <a href="https://degenllama.net" target="_blank">degenllama.net</a></p>
+            <h2>Pricing & Payment</h2>
+            <p>💵 <strong>$0.75 per analysis</strong> (flat rate, paid in USDC on Base)</p>
+            <p>💳 Payment Address: <code style="background: rgba(109, 232, 165, 0.18); padding: 2px 6px; border-radius: 4px;">0x01D11F7e1a46AbFC6092d7be484895D2d505095c</code></p>
+            <p>⚡ Protocol: x402 micropayments</p>
+        </div>
+
+        <div class="section">
+            <h2>Getting Started</h2>
+            <p>Use any x402-compatible client or AI agent to call the invoke endpoint with your wallet address.</p>
+            <p>View the <a href="/.well-known/agent.json">agent manifest</a> for full API schema and input parameters.</p>
+            <p style="margin-top: 20px; font-size: 0.9em; opacity: 0.8;">Powered by <a href="https://degenllama.net" target="_blank">degenllama.net</a></p>
         </div>
     </div>
 </body>
