@@ -55,6 +55,11 @@ const { app, addEntrypoint, config } = createAgentApp(
     description: "Comprehensive DeFi risk analysis powered by 6 specialized agents - your complete portfolio health monitor with auto-detected LP positions",
     icon: "https://raw.githubusercontent.com/DeganAI/.github/main/defi-guardian-icon.svg",
     url: "https://degenllama.net",
+    og: {
+      title: "DeFi Guardian",
+      description: "Complete DeFi portfolio health monitoring via x402 micropayments",
+      image: "https://defi-guardian-production.up.railway.app/favicon.ico",
+    },
   },
   {
     config: {
