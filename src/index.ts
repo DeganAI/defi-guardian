@@ -55,6 +55,11 @@ const { app, addEntrypoint, config } = createAgentApp(
     description: "Complete DeFi portfolio health monitoring via x402 micropayments",
     icon: "https://raw.githubusercontent.com/DeganAI/.github/main/defi-guardian-icon.svg",
     url: "https://degenllama.net",
+    meta: {
+      title: "DeFi Guardian",
+      description: "Complete DeFi portfolio health monitoring via x402 micropayments",
+      image: "https://defi-guardian-production.up.railway.app/favicon.ico",
+    },
   },
   {
     config: {
