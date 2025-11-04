@@ -42,7 +42,7 @@ const { app, addEntrypoint, config } = createAgentApp(
   {
     name: "DeFi Guardian",
     version: "1.0.0",
-    description: "Comprehensive DeFi risk analysis powered by 10 specialized agents - your complete portfolio health monitor",
+    description: "Comprehensive DeFi risk analysis powered by 5 specialized agents - your complete portfolio health monitor",
   },
   {
     config: {
@@ -320,4 +320,4 @@ console.log(`💰 Payment address: ${config.payments?.payTo}`);
 console.log(`💵 Flat rate: $0.75 per analysis`);
 console.log(`🔓 Internal API mode: ZERO backend costs`);
 console.log(`💎 Profit margin: 100% ($0.75 pure profit per call)`);
-console.log(`📊 Powered by 10 specialized DeFi agents`);
+console.log(`📊 Powered by 5 specialized DeFi agents`);
