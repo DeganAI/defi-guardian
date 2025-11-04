@@ -4,5 +4,3 @@ builder = "nixpacks"
 [deploy]
 startCommand = "bun run start"
 healthcheckPath = "/health"
-restartPolicyType = "on-failure"
-restartPolicyMaxRetries = 10
