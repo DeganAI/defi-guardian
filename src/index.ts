@@ -52,14 +52,9 @@ const { app, addEntrypoint, config } = createAgentApp(
   {
     name: "DeFi Guardian",
     version: "1.0.0",
-    description: "Comprehensive DeFi risk analysis powered by 6 specialized agents - your complete portfolio health monitor with auto-detected LP positions",
+    description: "Complete DeFi portfolio health monitoring via x402 micropayments",
     icon: "https://raw.githubusercontent.com/DeganAI/.github/main/defi-guardian-icon.svg",
     url: "https://degenllama.net",
-    og: {
-      title: "DeFi Guardian",
-      description: "Complete DeFi portfolio health monitoring via x402 micropayments",
-      image: "https://defi-guardian-production.up.railway.app/favicon.ico",
-    },
   },
   {
     config: {
@@ -207,6 +202,9 @@ function generateSummary(
 
   return summary;
 }
+
+// Add custom root route with Open Graph meta tags (must be added AFTER agent-kit routes are set up)
+// This will be added after entrypoints are registered
 
 // Register entrypoint
 addEntrypoint({
