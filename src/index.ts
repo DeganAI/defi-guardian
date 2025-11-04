@@ -82,8 +82,12 @@ const INTERNAL_SERVICES = {
   portfolio: "https://portfolio-scanner-production.up.railway.app/api/internal/portfolio-scanner",
 };
 
-// Shared API key for internal service calls (set via environment variable)
-const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || "defi-guardian-internal-2024";
+// Shared API key for internal service calls (REQUIRED via environment variable)
+const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY;
+
+if (!INTERNAL_API_KEY) {
+  throw new Error("INTERNAL_API_KEY environment variable is required");
+}
 
 async function callInternalService(
   url: string,
