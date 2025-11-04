@@ -406,12 +406,10 @@ const wrapperApp = new Hono();
 wrapperApp.route("/", app);
 
 // Add favicon route for x402scan display (overrides agent-kit's favicon if any)
-wrapperApp.get("/favicon.ico", (c) => {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-    <text y="80" font-size="80">🛡️</text>
-</svg>`;
-
-  return c.body(svg, 200, { "Content-Type": "image/svg+xml" });
+wrapperApp.get("/favicon.ico", async (c) => {
+  const file = Bun.file("./dgfav.png");
+  const buffer = await file.arrayBuffer();
+  return c.body(buffer, 200, { "Content-Type": "image/png" });
 });
 
 // Add custom root route with Open Graph meta tags (overrides agent-kit's root route)
@@ -476,7 +474,7 @@ wrapperApp.get("/", (c) => {
 </head>
 <body>
     <div class="container">
-        <div class="shield">🛡️</div>
+        <div class="shield"><img src="/favicon.ico" width="80" alt="DeFi Guardian" /></div>
         <h1>DeFi Guardian</h1>
         <p><strong>Complete DeFi portfolio health monitoring via x402 micropayments</strong></p>
 
