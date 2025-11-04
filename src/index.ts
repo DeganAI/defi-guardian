@@ -232,8 +232,8 @@ addEntrypoint({
       perpsData = await callInternalService(
         INTERNAL_SERVICES.perps,
         {
-          symbols: ["BTC-PERP", "ETH-PERP"],
-          exchanges: ["binance", "bybit"],
+          venue_ids: ["binance", "bybit", "okx"],
+          markets: ["BTC/USDT:USDT", "ETH/USDT:USDT"],
         }
       );
     }
@@ -245,9 +245,8 @@ addEntrypoint({
       arbitrageData = await callInternalService(
         INTERNAL_SERVICES.arbitrage,
         {
-          token_address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", // USDC
-          chain_id: 1,
-          min_profit_usd: 10,
+          chain_id: input.chain_ids[0] || 1, // Use first chain from input
+          min_profit_pct: 0.3, // 0.3% minimum profit
         }
       );
     }
